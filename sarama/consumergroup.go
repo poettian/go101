@@ -84,6 +84,8 @@ func main() {
 		config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	}
 
+	config.Consumer.Return.Errors = true
+
 	// consumer 代表了一个消费者的 handler 实例，它实现了 ConsumerGroupHandler 接口，实现消费消息的逻辑
 	// 它持有一个 ConsumerGroupSession 实例，这个实例代表一个消费者 session，
 	// 可以通过这个 session，获取消费者被分配到的 topic/partition 信息，以及使用这个 session 来标记消息和管理 offset
@@ -96,6 +98,13 @@ func main() {
 	if err != nil {
 		log.Panicf("Error creating consumer group client: %v", err)
 	}
+
+	go func() {
+		for err := range client.Errors() {
+			log.Printf("Error from consumer: %v", err)
+			cancel()
+		}
+	}()
 
 	consumptionIsPaused := false
 	wg := &sync.WaitGroup{}
@@ -111,7 +120,7 @@ func main() {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					return
 				}
-				log.Panicf("Error from consumer: %v", err)
+				log.Panicf("Error when consume: %v", err)
 			}
 			// check if context was cancelled, signaling that the consumer should stop
 			if ctx.Err() != nil {

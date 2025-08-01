@@ -234,6 +234,7 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
 		// https://github.com/IBM/sarama/issues/1192
 		case <-session.Context().Done():
+			log.Printf("session.Context().Done()")
 			return nil
 		}
 	}
